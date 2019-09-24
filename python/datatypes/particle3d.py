@@ -3,6 +3,7 @@ from pyqtgraph.Qt import QtGui, QtCore
 import numpy
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
+from larcv import larcv
 
 class particle3d(recoBase3D):
 
@@ -38,28 +39,35 @@ class particle3d(recoBase3D):
 
 
         event_particle = io_manager.get_data(self._product_name, str(self._producerName))
+        event_particle = larcv.EventParticle.to_particle(event_particle) 
 
         # # This section draws voxels onto the environment:
         for particle in event_particle.as_vector():
-            box = particle.boundingbox_3d()
+            try:
+                box = particle.boundingbox_3d()  
 
-            # Can create a 3D box using line plots.
+                # Can create a 3D box using line plots.  
 
+                pts = self._box_template.copy()  
 
-            pts = self._box_template.copy()
+                pts[:,0] *= box.width()
+                pts[:,1] *= box.height()
+                pts[:,2] *= box.depth()  
 
-            pts[:,0] *= box.width()
-            pts[:,1] *= box.height()
-            pts[:,2] *= box.depth()
+                pts[:,0] += box.center_x() - meta.min_x() - 0.5*box.width()
+                pts[:,1] += box.center_y() - meta.min_y() - 0.5*box.height()
+                pts[:,2] += box.center_z() - meta.min_z() - 0.5*box.depth()  
+      
 
-            pts[:,0] += box.center_x() - meta.min_x() - 0.5*box.width()
-            pts[:,1] += box.center_y() - meta.min_y() - 0.5*box.height()
-            pts[:,2] += box.center_z() - meta.min_z() - 0.5*box.depth()
+                line = gl.GLLinePlotItem(pos=pts,color=(1.0,1.0,1.0,1.0), width=3)
+                view_manager.getView().addItem(line)
+                self._drawnObjects.append(line)
+            except:
+                print ('pdg code:', particle.pdg_code())
+                print("Can't draw particle")
 
-
-            line = gl.GLLinePlotItem(pos=pts,color=(1.0,1.0,1.0,1.0), width=3)
-            view_manager.getView().addItem(line)
-            self._drawnObjects.append(line)
+                # view_manager.getView().qglColor(QtCore.Qt.white)
+                # view_manager.getView().renderText(0, 0, 0, "Hello World")
             # break
 
 #             min_x

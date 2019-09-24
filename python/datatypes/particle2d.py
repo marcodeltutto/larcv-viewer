@@ -1,6 +1,7 @@
 from .database import recoBase
 from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph as pg
+from larcv import larcv
 
 class particle2d(recoBase):
 
@@ -9,14 +10,14 @@ class particle2d(recoBase):
     def __init__(self):
         super(particle2d, self).__init__()
         self._product_name = 'particle'
-        larcv.load_pyutil()
+        # larcv.load_pyutil()
 
     # this is the function that actually draws the cluster.
     def drawObjects(self, view_manager, io_manager, meta):
 
 
         event_particle = io_manager.get_data(self._product_name, str(self._producerName))
-
+        event_particle = larcv.EventParticle.to_particle(event_particle) 
 
         self._drawnObjects = []
         for plane, view in view_manager.getViewPorts().items():
@@ -26,20 +27,26 @@ class particle2d(recoBase):
 
             for particle in event_particle.as_vector():
 
-                # particle = event_particle.at(i)
-                bounding_box = particle.boundingbox_2d(plane)
+                try:
+                    # particle = event_particle.at(i)
+                    bounding_box = particle.boundingbox_2d(plane)    
 
-                left = meta.wire_to_col(bounding_box.min_y(), plane)
-                right = meta.wire_to_col(bounding_box.max_y(), plane)
-                top = meta.time_to_row(bounding_box.min_x(), plane)
-                bottom = meta.time_to_row(bounding_box.max_x(), plane)
+                    left = meta.wire_to_col(bounding_box.min_y(), plane)
+                    right = meta.wire_to_col(bounding_box.max_y(), plane)
+                    top = meta.time_to_row(bounding_box.min_x(), plane)
+                    bottom = meta.time_to_row(bounding_box.max_x(), plane)    
 
-                #r = QtGui.QGraphicsRectItem(bottom, left, (top - bottom), (right-left))
-                r = QtGui.QGraphicsRectItem(left, bottom, (right-left), (top - bottom))
-                r.setPen(pg.mkPen('r'))
-                r.setBrush(pg.mkColor((0,0,0,0)))
-                self._drawnObjects[plane].append(r)
-                view._plot.addItem(r)
+                    #r = QtGui.QGraphicsRectItem(bottom, left, (top - bottom), (right-left))
+                    r = QtGui.QGraphicsRectItem(left, bottom, (right-left), (top - bottom))
+                    r.setPen(pg.mkPen('r'))
+                    r.setBrush(pg.mkColor((0,0,0,0)))
+                    self._drawnObjects[plane].append(r)
+                    view._plot.addItem(r)
+                except:
+                    if plane == 0: 
+                        print ('pdg code:', particle.pdg_code())
+                        print("Can't draw particle")
+
 
         return
 
